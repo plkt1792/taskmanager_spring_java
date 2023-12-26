@@ -2,10 +2,13 @@ package com.scaler.taskmanager.controllers;
 
 import com.scaler.taskmanager.dto.CreateTaskDTO;
 import com.scaler.taskmanager.dto.ErrorResponseDTO;
+import com.scaler.taskmanager.dto.TaskResponseDTO;
 import com.scaler.taskmanager.dto.UpdateTaskDTO;
 import com.scaler.taskmanager.entities.TaskEntity;
+import com.scaler.taskmanager.services.NoteService;
 import com.scaler.taskmanager.services.TaskService;
 import org.apache.coyote.Response;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +19,12 @@ import java.util.List;
 @RequestMapping("/tasks")
 public class TasksController {
     private final TaskService taskService;
+    private final NoteService noteService;
+    private ModelMapper modelMapper = new ModelMapper();
 
-    public TasksController(TaskService taskService) {
+    public TasksController(TaskService taskService, NoteService noteService) {
         this.taskService = taskService;
+        this.noteService = noteService;
     }
 
     @GetMapping("")
@@ -28,12 +34,15 @@ public class TasksController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskEntity> getTaskById(@PathVariable("id") Integer id){
+    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable("id") Integer id){
         var task = taskService.getTaskById(id);
+        var notes = noteService.getNotesForTask(id);
         if(task == null){
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(task);
+        var taskResponse = modelMapper.map(task, TaskResponseDTO.class);
+        taskResponse.setNotes(notes);
+        return ResponseEntity.ok(taskResponse);
     }
 
     @PatchMapping("/{id}")
